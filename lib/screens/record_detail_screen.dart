@@ -1,44 +1,6 @@
-// // lib/screens/record_detail_screen.dart
-
-// import 'package:flutter/material.dart';
-// import '../models/patient_record.dart';
-
-// class RecordDetailScreen extends StatelessWidget {
-//   final PatientRecord record;
-
-//   const RecordDetailScreen({super.key, required this.record});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: const Text('Record Details')),
-//       body: Padding(
-//         padding: const EdgeInsets.all(16),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             Text(
-//               'Patient ID: ${record.id}',
-//               style: Theme.of(context).textTheme.titleMedium,
-//             ),
-//             const SizedBox(height: 8),
-//             Text(
-//               'Date: ${record.date}',
-//               style: Theme.of(context).textTheme.titleMedium,
-//             ),
-//             const SizedBox(height: 16),
-//             Text('Summary:', style: Theme.of(context).textTheme.headlineMedium),
-//             const SizedBox(height: 8),
-//             Text(record.summary, style: Theme.of(context).textTheme.bodyMedium),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 // lib/screens/record_detail_screen.dart
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/patient_record.dart';
 import 'record_edit_screen.dart';
@@ -117,11 +79,58 @@ class _RecordDetailScreenState extends State<RecordDetailScreen> {
             const SizedBox(height: 8),
             Text(
               _record.summary,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context).textTheme.bodyMedium
             ),
-          ],
-        ),
+            if (_record.history.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Text(
+                'HISTORY', 
+                style: Theme.of(context).textTheme.titleLarge
+              ),
+              const SizedBox(height: 8),
+              // for (final e in _record.history.entries)
+              ..._record.history.entries.map((entry) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.key,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    Text(
+                      'Y/N: ${entry.value['yn']}, '
+                      'Duration: ${entry.value['duration']} ${entry.value['unit']}',
+                    ),
+                    if((entry.value['comment'] as String).isNotEmpty)
+                      Text('Note: ${entry.value['comment']}'),
+                  ],
+                ),
+              )),
+            ],
+          ] 
+            //     Padding(
+            //       padding: const EdgeInsets.symmetric(vertical: 4),
+            //       child: Column(
+            //         crossAxisAlignment: CrossAxisAlignment.start,
+            //         children: [
+            //           Text(e.key, style: Theme.of(context).textTheme.bodyLarge),
+            //           Text('Y/N: ${e.value['yn']}, '
+            //               'Duration: ${e.value['duration']} ${e.value['unit']}'),
+            //           if ((e.value['comment'] as String).isNotEmpty)
+            //             Text('Note: ${e.value['comment']}'),
+            //         ],
+            //       ),
+            //     ),
+            // ],
+            // style: Theme.of(context).textTheme.bodyMedium,
+            ),
       ),
     );
   }
 }
+//         ),
+//       ),
+//     );
+//   }
+// }

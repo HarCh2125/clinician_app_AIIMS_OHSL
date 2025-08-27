@@ -1,68 +1,3 @@
-// // class DBService {
-// //   static final DBService _instance = DBService._();
-// //   DBService._();
-// //   factory DBService() => _instance;
-// //   Future<Database> get db async { … }
-// //   Future<void> init() async { … }
-// //   Future<String> insertPatient(Map<String, dynamic> data) async { … }
-// //   Future<List<Map<String, dynamic>>> getPatientRecords(String id) async { … }
-// // }
-
-// // lib/services/db_helper.dart
-
-// import 'dart:io';
-// import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-// import 'package:path/path.dart';
-// import '../models/patient_record.dart';
-
-// class DBHelper {
-//   static late DatabaseFactory _factory;
-//   static late Database _db;
-
-//   /// Call this once at app startup
-//   static Future<void> init() async {
-//     // Initialize FFI implementation
-//     sqfliteFfiInit();
-//     _factory = databaseFactoryFfi;
-
-//     // Store the DB file in your app’s working directory
-//     final dbPath = join(Directory.current.path, 'clinic_app.db');
-
-//     _db = await _factory.openDatabase(
-//       dbPath,
-//       options: OpenDatabaseOptions(
-//         version: 1,
-//         onCreate: (db, version) async {
-//           // Create the `patients` table
-//           await db.execute('''
-//             CREATE TABLE patients (
-//               id TEXT PRIMARY KEY,
-//               date TEXT,
-//               summary TEXT
-//             )
-//           ''');
-//         },
-//       ),
-//     );
-//   }
-
-//   /// Insert or replace a patient record
-//   static Future<void> insertPatientRecord(PatientRecord record) async {
-//     await _db.insert(
-//       'patients',
-//       record.toMap(),
-//       conflictAlgorithm: ConflictAlgorithm.replace,
-//     );
-//   }
-
-//   /// Read back all records, newest first
-//   static Future<List<Map<String, dynamic>>> getPatientRecords() async {
-//     return await _db.query('patients', orderBy: 'date DESC');
-//   }
-// }
-
-// lib/services/db_helper.dart
-
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/patient_record.dart';
@@ -87,20 +22,31 @@ class DBHelper {
     final databasesPath = await getDatabasesPath();
     final path = join(databasesPath, 'clinic_app.db');
 
-    // Open (or create) the database
-    _db = await openDatabase(
-      path,
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE patients (
-            id TEXT PRIMARY KEY,
-            date TEXT,
-            summary TEXT
-          )
-        ''');
-      },
-    );
+    // Open (or create / migrate) the database
+   _db = await openDatabase(
+     path,
+     version: 2,  // ← bump from 1 to 2
+     onCreate: (db, version) async {
+       // brand-new install: include history column
+       await db.execute('''
+         CREATE TABLE patients (
+           id TEXT PRIMARY KEY,
+           date TEXT,
+           summary TEXT,
+           history TEXT     -- store your JSON here
+         )
+       ''');
+     },
+     onUpgrade: (db, oldV, newV) async {
+       if (oldV < 2) {
+         // existing installs: add the new column
+         await db.execute('''
+           ALTER TABLE patients
+           ADD COLUMN history TEXT
+         ''');
+       }
+     },
+   );
 
     return _db!;
   }
@@ -131,12 +77,6 @@ class DBHelper {
     );
   }
 
-  /// Read back all records, newest first
-  // static Future<List<Map<String, dynamic>>> getPatientRecords() async {
-  //   final db = await _getDb();
-  //   return await db.query('patients', orderBy: 'date DESC');
-  // }
-  /// Read back only the records matching [patientId], newest first
   static Future<List<Map<String, dynamic>>> getPatientRecords(
     String patientId,
   ) async {

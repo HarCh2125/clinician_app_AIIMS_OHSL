@@ -2,6 +2,7 @@
 
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'dart:convert';
 import '../models/patient_record.dart';
 import 'patient_service.dart';
 
@@ -15,19 +16,25 @@ class SqlExportService {
 
     // 2. Build SQL dump
     final buffer = StringBuffer()
+      // ..writeln(
+      //   'CREATE TABLE IF NOT EXISTS patients ('
+      //   'id TEXT PRIMARY KEY, '
+      //   'date TEXT, '
+      //   'summary TEXT'
+      //   ');'
+      // );
       ..writeln(
         'CREATE TABLE IF NOT EXISTS patients ('
-        'id TEXT PRIMARY KEY, '
-        'date TEXT, '
-        'summary TEXT'
+        'id TEXT PRIMARY KEY, date TEXT, summary TEXT, history TEXT'
         ');'
       );
     for (final r in records) {
       final date   = r.date.toIso8601String();
       // Escape single quotes in summary
       final summary = r.summary.replaceAll("'", "''");
+      final hist = r.history.isNotEmpty ? jsonEncode(r.history).replaceAll("'", "'") : '';
       buffer.writeln(
-        "INSERT OR REPLACE INTO patients (id, date, summary) "
+        "INSERT OR REPLACE INTO patients (id, date, summary, history) "
         "VALUES ('${r.id}', '$date', '$summary');"
       );
     }
